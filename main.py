@@ -15,6 +15,7 @@ client = genai.Client(api_key=api_key)
 def main():
     parser = argparse.ArgumentParser(description="Chat Bot takes prompt from user")
     parser.add_argument("user_prompt", type=str, help="Type in a prompt please")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
@@ -28,10 +29,13 @@ def main():
     
     if response.usage_metadata is None:
         raise RuntimeError("RuntimeError: Usage metadata was not found")
-    else:
-        print(f"User prompt: {args}")
+    elif args.verbose is True:
+        print(f"User prompt: {args.user_prompt}")
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        print("Response: ")
+        print(response.text)
+    else:
         print("Response: ")
         print(response.text)
 
