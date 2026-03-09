@@ -7,6 +7,12 @@ def get_files_info(working_diectory, directory="."):
         return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'
     if not os.path.isdir(target_dir):
         return f'Error: "{directory}" is not a directory'
+    for target in os.scandir(target_dir):
+        return f" - {target.name}: file_size={target.stat().st_size} bytes , is_dir={target.is_dir()}"
+        
+
+
+        
     
     
         
