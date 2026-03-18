@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from prompts import system_prompt
+from functions.call_function import available_functions
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -27,7 +28,7 @@ def main():
     contents = messages,
     
     
-    config=types.GenerateContentConfig(system_instruction=system_prompt)
+    config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt)
     )
 
     
