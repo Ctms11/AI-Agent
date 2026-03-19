@@ -26,23 +26,25 @@ def main():
     response = client.models.generate_content(
     model = 'gemini-2.5-flash', 
     contents = messages,
-    
-    
     config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt)
     )
 
-    
-    if response.usage_metadata is None:
-        raise RuntimeError("RuntimeError: Usage metadata was not found")
-    elif args.verbose is True:
-        print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        print("Response: ")
-        print(response.text)
-    else:
-        print("Response: ")
-        print(response.text)
+    if not response.function_calls:
+
+        if response.usage_metadata is None:
+            raise RuntimeError("RuntimeError: Usage metadata was not found")
+        elif args.verbose is True:
+            print(f"User prompt: {args.user_prompt}")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+            print("Response: ")
+            print(response.text)
+        else:
+            print("Response: ")
+            print(response.text)       
+    elif response.function_calls:
+        for function_call in response.function_calls:
+            print(f"Calling function: {function_call.name}({function_call.args})")
 
 if __name__ == "__main__":
     main()
