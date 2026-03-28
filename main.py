@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from prompts import system_prompt
-from functions.call_function import available_functions
+from functions.call_function import available_functions, call_function
+
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -43,8 +44,21 @@ def main():
             print("Response: ")
             print(response.text)       
     elif response.function_calls:
+        function_result = []
         for function_call in response.function_calls:
-            print(f"Calling function: {function_call.name}({function_call.args})")
+            function_call_result = call_function(function_call, verbose=args.verbose)
+            if not function_call_result.parts:
+                raise RuntimeError("RuntimeError: Function call result parts were not found")
+            elif function_call_result.parts[0].function_response is None:
+                raise RuntimeError("RuntimeError: Function response was not found in function call result parts")       
+            elif function_call_result.parts[0].function_response.response is None:
+                raise RuntimeError("RuntimeError: Response was not found in function response of function call result parts")
+            else:
+                function_result.append(function_call_result.parts[0])
+            if args.verbose is True:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
+
+
 
 if __name__ == "__main__":
     main()
