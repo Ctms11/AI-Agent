@@ -1,5 +1,6 @@
 import os
 import argparse
+import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -22,42 +23,52 @@ def main():
     args = parser.parse_args()
 
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
-
-    #my_prompt = "Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."   
-    response = client.models.generate_content(
-    model = 'gemini-2.5-flash', 
-    contents = messages,
-    config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt)
-    )
-
-    if not response.function_calls:
-
+    for i in range(20):
+        # calls the model, handle response, etc..
+       
+        response = client.models.generate_content(
+        model = 'gemini-2.5-flash', 
+        contents = messages,
+        config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt)
+        )
         if response.usage_metadata is None:
             raise RuntimeError("RuntimeError: Usage metadata was not found")
-        elif args.verbose is True:
-            print(f"User prompt: {args.user_prompt}")
-            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-            print("Response: ")
-            print(response.text)
-        else:
-            print("Response: ")
-            print(response.text)       
-    elif response.function_calls:
-        function_result = []
-        for function_call in response.function_calls:
-            function_call_result = call_function(function_call, verbose=args.verbose)
-            if not function_call_result.parts:
-                raise RuntimeError("RuntimeError: Function call result parts were not found")
-            elif function_call_result.parts[0].function_response is None:
-                raise RuntimeError("RuntimeError: Function response was not found in function call result parts")       
-            elif function_call_result.parts[0].function_response.response is None:
-                raise RuntimeError("RuntimeError: Response was not found in function response of function call result parts")
-            else:
-                function_result.append(function_call_result.parts[0])
+        
+        if response.candidates:
+            for candidate in response.candidates:
+                if candidate.content:
+                    messages.append(candidate.content)
+        
+        
+        if not response.function_calls:
             if args.verbose is True:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
-
+                print(f"User prompt: {args.user_prompt}")
+                print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+                print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+                print(f"Final response:")
+                print(response.text)
+                return
+            else:
+                print(f"Final response:")
+                print(response.text)
+                return           
+        else:
+            function_result = []
+            for function_call in response.function_calls:
+                function_call_result = call_function(function_call, verbose=args.verbose)
+                if not function_call_result.parts:
+                    raise RuntimeError("RuntimeError: Function call result parts were not found")
+                elif function_call_result.parts[0].function_response is None:
+                    raise RuntimeError("RuntimeError: Function response was not found in function call result parts")       
+                elif function_call_result.parts[0].function_response.response is None:
+                    raise RuntimeError("RuntimeError: Response was not found in function response of function call result parts")
+                else:
+                    function_result.append(function_call_result.parts[0])
+                if args.verbose is True:
+                    print(f"-> {function_call_result.parts[0].function_response.response}")    
+            messages.append(types.Content(role="user", parts=function_result))
+    print("Maximum iterations reached without a final response.")
+    sys.exit(1)
 
 
 if __name__ == "__main__":
